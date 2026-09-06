@@ -18,6 +18,7 @@
     --line:#0a0a0a;
     --line-soft:#c9c9c9;
     --ok:#0a7a3d;
+    --warn:#b5750a;
     --warn-bg:#fff1cc;
     --card-bg:#ffffff;
     --font-body: 'Archivo', system-ui, sans-serif;
@@ -34,17 +35,18 @@
       --line:#f3f3f3;
       --line-soft:#3d3d3d;
       --ok:#3ddc84;
+      --warn:#ffb84d;
       --warn-bg:#3a2c00;
       --card-bg:#0a0a0a;
     }
   }
   :root[data-theme="dark"]{
     --bg:#0a0a0a; --fg:#f3f3f3; --muted:#b3b3b3; --red:#ff4136; --red-ink:#0a0a0a;
-    --red-tint:#2b0e0e; --line:#f3f3f3; --line-soft:#3d3d3d; --ok:#3ddc84; --warn-bg:#3a2c00; --card-bg:#0a0a0a;
+    --red-tint:#2b0e0e; --line:#f3f3f3; --line-soft:#3d3d3d; --ok:#3ddc84; --warn:#ffb84d; --warn-bg:#3a2c00; --card-bg:#0a0a0a;
   }
   :root[data-theme="light"]{
     --bg:#ffffff; --fg:#0a0a0a; --muted:#5c5c5c; --red:#d21f1f; --red-ink:#ffffff;
-    --red-tint:#fbe4e4; --line:#0a0a0a; --line-soft:#c9c9c9; --ok:#0a7a3d; --warn-bg:#fff1cc; --card-bg:#ffffff;
+    --red-tint:#fbe4e4; --line:#0a0a0a; --line-soft:#c9c9c9; --ok:#0a7a3d; --warn:#b5750a; --warn-bg:#fff1cc; --card-bg:#ffffff;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);}
@@ -144,19 +146,22 @@
   .slot .bar{height:5px;background:var(--line-soft);margin-top:8px;position:relative;}
   .slot .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--red);}
   .slot .label{font-size:10px;margin-top:6px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
-  /* ---------- storm banner ---------- */
+  /* ---------- storm / advisory banners ---------- */
   .storm{
     border:3px solid var(--red);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;
   }
   .storm.clear{border-color:var(--line-soft);}
+  .storm.warn{border-color:var(--warn);}
   .storm .ic{flex:0 0 auto;font-family:var(--font-black);font-size:22px;color:var(--red);line-height:1;}
   .storm.clear .ic{color:var(--ok);}
+  .storm.warn .ic{color:var(--warn);}
   .storm .body b{display:block;font-size:15px;margin-bottom:3px;}
   .storm .meta{font-size:11.5px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums;}
   /* ---------- grid cards ---------- */
   .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   @media (max-width:560px){.cards{grid-template-columns:1fr;}}
   .card{border:2px solid var(--line);padding:14px 16px;}
+  .card.wide{grid-column:1 / -1;}
   .card h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;}
   .card .big{font-family:var(--font-black);font-size:32px;line-height:1;}
   .card .small{font-size:12px;color:var(--muted);margin-top:6px;}
@@ -164,6 +169,9 @@
   .uv-scale i{flex:1;}
   .uv-scale .pos{position:relative;}
   .uv-marker{width:2px;height:12px;background:var(--fg);position:relative;top:-15px;}
+  .psi-scale{display:flex;height:6px;margin-top:10px;border:1px solid var(--line);}
+  .psi-scale i{flex:1;}
+  .psi-cat-pill{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;margin-left:8px;border:1px solid currentColor;vertical-align:middle;}
   /* radar */
   .radar-imgs{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   @media (max-width:560px){.radar-imgs{grid-template-columns:1fr;}}
@@ -216,7 +224,6 @@
 </head>
 <body>
 <div class="wrap">
-
   <header class="top">
     <div class="brand">
       <p class="eyebrow">Pickleball Weather Call</p>
@@ -240,7 +247,6 @@
       </svg>
     </div>
   </header>
-
   <div class="statusbar">
     <span><span class="dot" id="status-dot"></span><span id="status-text">Loading live data…</span></span>
     <span>Updated <strong id="last-updated">—</strong></span>
@@ -248,7 +254,6 @@
     <span class="spacer"></span>
     <button class="btn" id="refresh-btn">Refresh now</button>
   </div>
-
   <div class="headline" id="headline-card">
     <div class="headline-top">
       <div>
@@ -261,7 +266,6 @@
       Peak chance of rain over your next 4 hours on court, from NEA nowcast + 24hr forecast + live rain gauges.
     </div>
   </div>
-
   <section>
     <h2>Next 4 Hours <span class="tag">— Hour by Hour</span></h2>
     <div class="timeline" id="timeline">
@@ -271,7 +275,6 @@
       <div class="slot"><div class="t">+4h</div><div class="p">—</div><div class="bar"><i style="width:0%"></i></div><div class="label">—</div></div>
     </div>
   </section>
-
   <section>
     <h2>Thunderstorm Warning</h2>
     <div class="storm clear" id="storm-box">
@@ -283,7 +286,17 @@
       </div>
     </div>
   </section>
-
+  <section>
+    <h2>Air Quality Advisory <span class="tag">— OK to Play?</span></h2>
+    <div class="storm clear" id="aqi-box">
+      <div class="ic">i</div>
+      <div class="body">
+        <b id="aqi-headline">Checking PSI…</b>
+        <div id="aqi-detail"></div>
+        <div class="meta" id="aqi-meta"></div>
+      </div>
+    </div>
+  </section>
   <section>
     <h2>Live Conditions</h2>
     <div class="cards">
@@ -301,9 +314,17 @@
         <div class="big" id="gauge-value">—</div>
         <div class="small" id="gauge-detail">Loading…</div>
       </div>
+      <div class="card wide">
+        <h3>Air Quality — PSI (24-hr, central region)</h3>
+        <div class="big" id="psi-value">—<span class="psi-cat-pill" id="psi-cat-pill" style="display:none;"></span></div>
+        <div class="small" id="psi-cat">Loading…</div>
+        <div class="psi-scale">
+          <i style="background:#0a7a3d"></i><i style="background:#8bc34a"></i><i style="background:#ffeb3b"></i><i style="background:#ff9800"></i><i style="background:#8e24aa"></i>
+        </div>
+        <div class="small" id="psi-time"></div>
+      </div>
     </div>
   </section>
-
   <section>
     <h2>Live Radar</h2>
     <div class="radar-imgs">
@@ -320,19 +341,17 @@
       British Club sits in central-west Singapore, near Bukit Timah — just west of the Central Water Catchment on the map. Full interactive map: <a href="https://www.nea.gov.sg/weather/rain-areas" target="_blank" rel="noopener">nea.gov.sg/weather/rain-areas</a>
     </p>
   </section>
-
   <section>
     <h2>Before You Leave Home</h2>
     <div class="checklist" id="checklist"></div>
   </section>
-
   <section>
     <h2>Confidence &amp; Data Sources</h2>
     <details class="conf" open>
       <summary>How this call is calculated <span class="chev">+</span></summary>
       <div class="conf-body">
         <div class="conf-disclaimer">
-          This is a heuristic estimate built by combining NEA's categorical forecasts — NEA does not publish an official "% chance of rain" for Singapore. Treat this as a guide, not a guarantee, especially for sudden convective storms.
+          This is a heuristic estimate built by combining NEA's categorical forecasts — NEA does not publish an official "% chance of rain" for Singapore. Treat this as a guide, not a guarantee, especially for sudden convective storms. The air quality advisory below is based on NEA/MOH's published PSI exertion guidance for the general population — it is informational, not medical advice, and does not itself change the rain probability shown above.
         </div>
         <table class="src">
           <thead><tr><th>Source</th><th>Feeds</th><th>Weight</th><th>Status</th><th>Updated</th></tr></thead>
@@ -346,31 +365,27 @@
       </div>
     </details>
   </section>
-
   <section>
     <h2>Session Log</h2>
     <div class="log-wrap">
       <table class="log">
-        <thead><tr><th>Time</th><th>Rain %</th><th>Call</th><th>Storm</th></tr></thead>
+        <thead><tr><th>Time</th><th>Rain %</th><th>Call</th><th>Storm</th><th>PSI</th></tr></thead>
         <tbody id="log-body"></tbody>
       </table>
       <div class="log-empty" id="log-empty">No checks logged yet this session.</div>
     </div>
     <div class="log-actions"><button class="btn" id="clear-log-btn">Clear log</button></div>
   </section>
-
   <footer>
-    Data: NEA Singapore via data.gov.sg (2-Hour Nowcast, 24-Hour Forecast, Rainfall stations, UV Index) and
-    <a href="https://www.nea.gov.sg/weather/rain-areas" target="_blank" rel="noopener">nea.gov.sg/weather/rain-areas</a> radar imagery. Auto-refreshes every 5 minutes while this page stays open. Built for British Club pickleball sessions — not an official weather product.
+    Data: NEA Singapore via data.gov.sg (2-Hour Nowcast, 24-Hour Forecast, Rainfall stations, UV Index, PSI) and
+    <a href="https://www.nea.gov.sg/weather/rain-areas" target="_blank" rel="noopener">nea.gov.sg/weather/rain-areas</a> radar imagery. Auto-refreshes every 5 minutes while this page stays open. Built for British Club pickleball sessions — not an official weather product, and the air quality advisory is not a substitute for MOH/NEA guidance for at-risk individuals.
   </footer>
-
 </div>
-
 <script>
 (function(){
   "use strict";
   var BC = {lat: 1.346349, lon: 103.791456};
-  var REGION = "central"; // British Club / Bukit Timah falls in NEA's "central" 24hr-forecast region
+  var REGION = "central"; // British Club / Bukit Timah falls in NEA's "central" 24hr-forecast region, and (by postal-district mapping) NEA's "central" PSI region too
   var STORM_RADIUS_KM = 10;
   var REFRESH_MS = 5 * 60 * 1000;
   var LOG_KEY = "pbrain_session_log_v1";
@@ -378,18 +393,18 @@
     {id:"radar", label:"Checked the live radar for approaching rain"},
     {id:"storm", label:"Checked the thunderstorm warning"},
     {id:"uv", label:"Checked UV index and packed sun protection if high"},
+    {id:"aqi", label:"Checked the air quality advisory (PSI)"},
     {id:"cover", label:"Packed a rain cover / towel just in case"}
   ];
-
   var URLS = {
     twoHr: "https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast",
     day24: "https://api-open.data.gov.sg/v2/real-time/api/twenty-four-hr-forecast",
     rain: "https://api-open.data.gov.sg/v2/real-time/api/rainfall",
-    uv: "https://api.data.gov.sg/v1/environment/uv-index"
+    uv: "https://api.data.gov.sg/v1/environment/uv-index",
+    psi: "https://api-open.data.gov.sg/v2/real-time/api/psi"
   };
-
+  var SOURCE_COUNT = 5;
   function $(id){ return document.getElementById(id); }
-
   function haversineKm(lat1, lon1, lat2, lon2){
     var R = 6371;
     var dLat = (lat2 - lat1) * Math.PI / 180;
@@ -399,7 +414,6 @@
             Math.sin(dLon/2)*Math.sin(dLon/2);
     return 2 * R * Math.asin(Math.sqrt(a));
   }
-
   function textScore(text){
     var t = (text || "").toLowerCase();
     if (t.indexOf("thundery") !== -1) return 90;
@@ -414,7 +428,6 @@
     if (t.indexOf("fair") !== -1 || t.indexOf("sunny") !== -1 || t.indexOf("clear") !== -1) return 5;
     return 15;
   }
-
   function callFor(pct){
     if (pct < 15) return "Clear to play — low rain risk";
     if (pct < 35) return "Likely fine — keep an eye out";
@@ -422,7 +435,31 @@
     if (pct < 80) return "Risky — rain likely at some point";
     return "Don't bother — rain or storms likely";
   }
-
+  // ---------- PSI / air quality advisory ----------
+  // Bands + exertion advisory per NEA/MOH's published 24-hr PSI health advisory table
+  // (general/healthy population; at-risk groups — elderly, pregnant, young children,
+  // people with chronic heart/lung conditions — are called out separately below).
+  function psiInfo(psi){
+    if (psi === null || psi === undefined || isNaN(psi)) return null;
+    if (psi <= 50){
+      return {cat:"Good", cls:"clear", headline:"Good — fine to play",
+        detail:"Air quality is good. Normal activity, no restrictions on outdoor exertion."};
+    }
+    if (psi <= 100){
+      return {cat:"Moderate", cls:"clear", headline:"Moderate — fine to play",
+        detail:"Air quality is moderate. Normal activity, no restrictions on outdoor exertion."};
+    }
+    if (psi <= 200){
+      return {cat:"Unhealthy", cls:"warn", headline:"Unhealthy — play shorter, take breaks",
+        detail:"Reduce prolonged or strenuous outdoor exertion — shorten the session or add more breaks. Anyone elderly, pregnant, a young child, or with a chronic heart/lung condition should minimise (and if that condition is significant, avoid) outdoor exertion."};
+    }
+    if (psi <= 300){
+      return {cat:"Very Unhealthy", cls:"bad", headline:"Very unhealthy — don't play outside",
+        detail:"Avoid prolonged or strenuous outdoor exertion — better to reschedule or move the game indoors. At-risk groups (elderly, pregnant, chronic heart/lung conditions) should minimise outdoor activity of any kind."};
+    }
+    return {cat:"Hazardous", cls:"bad", headline:"Hazardous — stay indoors",
+      detail:"Minimise all outdoor activity — this is not a day to play outside. At-risk groups should avoid outdoor activity entirely."};
+  }
   function fmtTime(d){
     return d.toLocaleTimeString("en-SG", {hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"Asia/Singapore"}) + " SGT";
   }
@@ -432,7 +469,6 @@
     var m = Math.round(diffSec/60);
     return m + "m ago";
   }
-
   // ---------- radar image handling ----------
   function sgtWallMinutes(){
     var sgt = new Date(Date.now() + 8*3600*1000);
@@ -442,7 +478,6 @@
     };
   }
   function pad(n){ return String(n).length < 2 ? "0"+n : String(n); }
-
   function radarUrl(kind, backSteps){
     var interval = kind === "70km" ? 5 : 10;
     var w = sgtWallMinutes();
@@ -458,7 +493,6 @@
     var file = kind === "70km" ? ("dpsri_70km_" + stamp + "dBR.dpsri.png") : ("dpsri_240km_" + stamp + "dBR.dpsri.png");
     return "https://www.nea.gov.sg/docs/default-source/" + folder + "/" + file;
   }
-
   function loadRadar(kind, imgId, capId){
     var img = $(imgId), cap = $(capId);
     var attempt = 0, maxAttempts = 5;
@@ -478,7 +512,6 @@
     }
     tryLoad();
   }
-
   // ---------- session log ----------
   function readLog(){
     try { return JSON.parse(localStorage.getItem(LOG_KEY)) || []; } catch(e){ return []; }
@@ -500,14 +533,13 @@
     empty.style.display = "none";
     entries.forEach(function(e){
       var tr = document.createElement("tr");
-      tr.innerHTML = "<td>" + e.time + "</td><td>" + e.pct + "%</td><td>" + e.call + "</td><td>" + e.storm + "</td>";
+      tr.innerHTML = "<td>" + e.time + "</td><td>" + e.pct + "%</td><td>" + e.call + "</td><td>" + e.storm + "</td><td>" + (e.psi || "—") + "</td>";
       body.appendChild(tr);
     });
   }
   $("clear-log-btn").addEventListener("click", function(){
     if (confirm("Clear the session log?")){ writeLog([]); renderLog(); }
   });
-
   // ---------- checklist ----------
   function checklistKey(){
     var d = new Date();
@@ -535,7 +567,6 @@
       wrap.appendChild(row);
     });
   }
-
   // ---------- countdown ----------
   var nextRefreshAt = Date.now() + REFRESH_MS;
   function tickCountdown(){
@@ -547,7 +578,6 @@
     }
   }
   setInterval(tickCountdown, 1000);
-
   // ---------- main fetch + compute ----------
   function fetchJson(url){
     return fetch(url).then(function(r){
@@ -555,7 +585,6 @@
       return r.json();
     });
   }
-
   function setSourceRow(tbody, name, feeds, weight, ok, updated){
     var tr = document.createElement("tr");
     tr.innerHTML = "<td>" + name + "</td><td>" + feeds + "</td><td class='num'>" + weight + "</td>" +
@@ -563,35 +592,30 @@
       "<td class='num'>" + (updated ? updated : "—") + "</td>";
     tbody.appendChild(tr);
   }
-
   function refresh(){
     $("status-text").textContent = "Refreshing…";
     $("status-dot").className = "dot";
     nextRefreshAt = Date.now() + REFRESH_MS;
-
-    var results = { twoHr:null, day24:null, rain:null, uv:null };
+    var results = { twoHr:null, day24:null, rain:null, uv:null, psi:null };
     var okCount = 0;
-
     var p1 = fetchJson(URLS.twoHr).then(function(j){ results.twoHr = j; okCount++; }).catch(function(){});
     var p2 = fetchJson(URLS.day24).then(function(j){ results.day24 = j; okCount++; }).catch(function(){});
     var p3 = fetchJson(URLS.rain).then(function(j){ results.rain = j; okCount++; }).catch(function(){});
     var p4 = fetchJson(URLS.uv).then(function(j){ results.uv = j; okCount++; }).catch(function(){});
-
-    Promise.all([p1,p2,p3,p4]).then(function(){
+    var p5 = fetchJson(URLS.psi).then(function(j){ results.psi = j; okCount++; }).catch(function(){});
+    Promise.all([p1,p2,p3,p4,p5]).then(function(){
       compute(results, okCount);
       $("status-dot").className = "dot";
-      $("status-text").textContent = okCount === 4 ? "Live — all sources OK" : (okCount === 0 ? "All sources unreachable" : "Live — partial data (" + okCount + "/4 sources)");
+      $("status-text").textContent = okCount === SOURCE_COUNT ? "Live — all sources OK" : (okCount === 0 ? "All sources unreachable" : "Live — partial data (" + okCount + "/" + SOURCE_COUNT + " sources)");
       if (okCount === 0) $("status-dot").className = "dot bad";
       var now = new Date();
       $("last-updated").dataset.ts = now.toISOString();
       $("last-updated").textContent = "just now";
     });
   }
-
   function compute(results, okCount){
     var sourceTbody = $("source-table");
     sourceTbody.innerHTML = "";
-
     // ---- 2-hour nowcast: nearest area + storm scan ----
     var nowcastScore = 15, nowcastAreaName = "—", nowcastTs = null;
     var nearestStormKm = Infinity, nearestStormArea = null;
@@ -602,7 +626,6 @@
       nowcastTs = item ? item.timestamp : null;
       var coordByArea = {};
       meta.forEach(function(a){ coordByArea[a.name] = a.label_location; });
-
       var bestDist = Infinity, bestText = "";
       forecasts.forEach(function(f){
         var loc = coordByArea[f.area];
@@ -618,7 +641,6 @@
     } else {
       setSourceRow(sourceTbody, "2-Hour Nowcast", "Immediate rain risk, thunderstorm scan", "45%", false, "—");
     }
-
     // ---- 24-hour forecast: region text per period ----
     var periodScores = [15,15,15,15]; // placeholder for h1..h4, overwritten below
     var day24Ts = null, generalText = "";
@@ -645,7 +667,6 @@
     } else {
       setSourceRow(sourceTbody, "24-Hour Forecast", "Central-region outlook for +3h/+4h", "35%", false, "—");
     }
-
     // ---- rain gauges nearby ----
     var rainingNow = false, gaugeMaxMm = 0, gaugeStationName = null, gaugeTs = null, nearbyCount = 0;
     if (results.rain && results.rain.data){
@@ -674,7 +695,6 @@
       $("gauge-value").textContent = "—";
       $("gauge-detail").textContent = "Data unavailable";
     }
-
     // ---- UV index ----
     if (results.uv && results.uv.items && results.uv.items[0]){
       var idxArr = results.uv.items[0].index || [];
@@ -692,14 +712,41 @@
       $("uv-cat").textContent = "Data unavailable";
       setSourceRow(sourceTbody, "UV Index", "Sun exposure context", "informational", false, "—");
     }
-
+    // ---- PSI / air quality ----
+    var psiValue = null, psiTs = null, aqi = null;
+    var pill = $("psi-cat-pill");
+    if (results.psi && results.psi.data && results.psi.data.items && results.psi.data.items[0]){
+      var pItem = results.psi.data.items[0];
+      var psiReadings = (pItem.readings && pItem.readings.psi_twenty_four_hourly) || {};
+      psiValue = psiReadings[REGION];
+      psiTs = pItem.timestamp;
+      if (typeof psiValue === "number"){
+        aqi = psiInfo(psiValue);
+        $("psi-value").firstChild.textContent = psiValue;
+        $("psi-cat").textContent = aqi.cat + " — PSI " + psiValue + " (" + REGION + " region)";
+        pill.textContent = aqi.cat;
+        pill.style.display = "inline-block";
+        pill.style.color = aqi.cls === "clear" ? "var(--ok)" : (aqi.cls === "warn" ? "var(--warn)" : "var(--red)");
+      } else {
+        $("psi-value").firstChild.textContent = "—";
+        $("psi-cat").textContent = "No reading for " + REGION + " region";
+        pill.style.display = "none";
+      }
+      $("psi-time").textContent = psiTs ? "As of " + fmtTime(new Date(psiTs)) : "";
+      setSourceRow(sourceTbody, "PSI (Air Quality)", "24-hr Pollutant Standards Index, " + REGION + " region", "informational", true, psiTs ? fmtTime(new Date(psiTs)) : "—");
+    } else {
+      $("psi-value").firstChild.textContent = "—";
+      $("psi-cat").textContent = "Data unavailable";
+      $("psi-time").textContent = "";
+      pill.style.display = "none";
+      setSourceRow(sourceTbody, "PSI (Air Quality)", "24-hr Pollutant Standards Index, " + REGION + " region", "informational", false, "—");
+    }
     // ---- combine into hourly probabilities ----
     var h1 = Math.round(nowcastScore*0.7 + periodScores[0]*0.3 + (rainingNow ? 15 : 0));
     var h2 = Math.round(nowcastScore*0.5 + periodScores[1]*0.5 + (rainingNow ? 8 : 0));
     var h3 = Math.round(periodScores[2]*0.85 + nowcastScore*0.15);
     var h4 = Math.round(periodScores[3]*0.90 + nowcastScore*0.10);
     var hours = [h1,h2,h3,h4].map(function(v){ return Math.max(0, Math.min(100, v)); });
-
     var slots = document.querySelectorAll("#timeline .slot");
     var hourLabels = ["+1h","+2h","+3h","+4h"];
     var now = new Date();
@@ -711,14 +758,12 @@
       slot.querySelector(".bar i").style.width = v + "%";
       slot.querySelector(".label").textContent = v < 15 ? "Clear" : v < 35 ? "Watch" : v < 60 ? "Borderline" : v < 80 ? "Risky" : "Wet";
     });
-
     var headline = Math.max.apply(null, hours);
     var call = callFor(headline);
     $("headline-pct").innerHTML = headline + "<sup>%</sup>";
     $("headline-call").textContent = call;
     $("headline-sub").innerHTML = "Nearest forecast area: <b>" + nowcastAreaName + "</b> &middot; central-region 24hr outlook: <b>" + (generalText || "—") + "</b>" +
       (rainingNow ? " &middot; rain detected on nearby gauges right now" : "");
-
     // ---- thunderstorm warning gating (within 10km only) ----
     var stormBox = $("storm-box");
     if (nearestStormKm <= STORM_RADIUS_KM){
@@ -734,23 +779,34 @@
         : "No areas are currently forecast as thundery anywhere in Singapore.";
       $("storm-meta").textContent = "Source: NEA 2-Hour Nowcast forecast areas — updated " + (nowcastTs ? fmtTime(new Date(nowcastTs)) : "—") + ".";
     }
-
+    // ---- air quality advisory banner ----
+    var aqiBox = $("aqi-box");
+    if (aqi){
+      aqiBox.className = "storm " + (aqi.cls === "clear" ? "clear" : (aqi.cls === "warn" ? "warn" : ""));
+      $("aqi-headline").textContent = aqi.headline + " (PSI " + psiValue + ", " + aqi.cat + ")";
+      $("aqi-detail").textContent = aqi.detail;
+      $("aqi-meta").textContent = "Source: NEA PSI, " + REGION + " region, 24-hr reading — as of " + (psiTs ? fmtTime(new Date(psiTs)) : "—") + ". Based on NEA/MOH's general-population exertion guidance; individual risk varies.";
+    } else {
+      aqiBox.className = "storm clear";
+      $("aqi-headline").textContent = "PSI unavailable";
+      $("aqi-detail").textContent = "Couldn't reach NEA's PSI feed just now — check nea.gov.sg/psi before heading out if you're unsure about air quality.";
+      $("aqi-meta").textContent = "";
+    }
     // ---- overall confidence ----
     var pips = document.querySelectorAll("#conf-pips span");
-    var level = okCount === 4 ? 3 : okCount === 3 ? 2 : okCount >= 1 ? 1 : 0;
+    var level = okCount >= SOURCE_COUNT ? 3 : okCount === SOURCE_COUNT - 1 ? 2 : okCount >= 2 ? 1 : 0;
     pips.forEach(function(p, i){ p.className = i < (level+1) ? "on" : ""; });
     var confLabels = ["Very low — no sources reachable","Low — most sources missing","Moderate — heuristic model on partial data","Moderate — heuristic model, all sources live"];
     $("conf-label").textContent = confLabels[level];
-
     // ---- log entry ----
     addLogEntry({
       time: fmtTime(new Date()),
       pct: headline,
       call: call,
-      storm: nearestStormKm <= STORM_RADIUS_KM ? nearestStormKm.toFixed(1) + "km" : "none <" + STORM_RADIUS_KM + "km"
+      storm: nearestStormKm <= STORM_RADIUS_KM ? nearestStormKm.toFixed(1) + "km" : "none <" + STORM_RADIUS_KM + "km",
+      psi: aqi ? (psiValue + " (" + aqi.cat + ")") : "—"
     });
   }
-
   // ---------- init ----------
   loadRadar("70km", "radar-70", "radar-70-cap");
   loadRadar("240km", "radar-240", "radar-240-cap");
@@ -760,7 +816,6 @@
   refresh();
   setInterval(refresh, REFRESH_MS);
   tickCountdown();
-
   // refresh radar images each cycle too
   setInterval(function(){
     loadRadar("70km", "radar-70", "radar-70-cap");
@@ -770,3 +825,4 @@
 </script>
 </body>
 </html>
+ 
