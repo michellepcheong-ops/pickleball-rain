@@ -172,6 +172,10 @@
   .psi-scale{display:flex;height:6px;margin-top:10px;border:1px solid var(--line);}
   .psi-scale i{flex:1;}
   .psi-cat-pill{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;margin-left:8px;border:1px solid currentColor;vertical-align:middle;}
+  .aq-values{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:560px){.aq-values{grid-template-columns:1fr;}}
+  .aq-metric{min-width:0;}
+  .aq-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:6px;}
   /* radar */
   .radar-imgs{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   @media (max-width:560px){.radar-imgs{grid-template-columns:1fr;}}
@@ -315,13 +319,24 @@
         <div class="small" id="gauge-detail">Loading…</div>
       </div>
       <div class="card wide">
-        <h3>Air Quality — PSI (24-hr, central region)</h3>
-        <div class="big" id="psi-value">—<span class="psi-cat-pill" id="psi-cat-pill" style="display:none;"></span></div>
-        <div class="small" id="psi-cat">Loading…</div>
-        <div class="psi-scale">
-          <i style="background:#0a7a3d"></i><i style="background:#8bc34a"></i><i style="background:#ffeb3b"></i><i style="background:#ff9800"></i><i style="background:#8e24aa"></i>
+        <h3>Air Quality — Central Region</h3>
+        <div class="aq-values">
+          <div class="aq-metric">
+            <div class="aq-label">24-hr PSI</div>
+            <div class="big" id="psi-value">—<span class="psi-cat-pill" id="psi-cat-pill" style="display:none;"></span></div>
+            <div class="small" id="psi-cat">Loading…</div>
+            <div class="psi-scale">
+              <i style="background:#0a7a3d"></i><i style="background:#8bc34a"></i><i style="background:#ffeb3b"></i><i style="background:#ff9800"></i><i style="background:#8e24aa"></i>
+            </div>
+            <div class="small" id="psi-time"></div>
+          </div>
+          <div class="aq-metric">
+            <div class="aq-label">1-hr PM2.5</div>
+            <div class="big" id="pm25-value">—</div>
+            <div class="small" id="pm25-cat">Loading…</div>
+            <div class="small" id="pm25-time"></div>
+          </div>
         </div>
-        <div class="small" id="psi-time"></div>
       </div>
     </div>
   </section>
@@ -351,7 +366,7 @@
       <summary>How this call is calculated <span class="chev">+</span></summary>
       <div class="conf-body">
         <div class="conf-disclaimer">
-          This is a heuristic estimate built by combining NEA's categorical forecasts — NEA does not publish an official "% chance of rain" for Singapore. Treat this as a guide, not a guarantee, especially for sudden convective storms. The air quality advisory below is based on NEA/MOH's published PSI exertion guidance for the general population — it is informational, not medical advice, and does not itself change the rain probability shown above.
+          This is a heuristic estimate built by combining NEA's categorical forecasts — NEA does not publish an official "% chance of rain" for Singapore. Treat this as a guide, not a guarantee, especially for sudden convective storms. The air quality advisory below combines the 24-hour PSI guidance with NEA's 1-hour PM2.5 guide for immediate outdoor activity. It is informational, not medical advice, and does not itself change the rain probability shown above.
         </div>
         <table class="src">
           <thead><tr><th>Source</th><th>Feeds</th><th>Weight</th><th>Status</th><th>Updated</th></tr></thead>
@@ -369,7 +384,7 @@
     <h2>Session Log</h2>
     <div class="log-wrap">
       <table class="log">
-        <thead><tr><th>Time</th><th>Rain %</th><th>Call</th><th>Storm</th><th>PSI</th></tr></thead>
+        <thead><tr><th>Time</th><th>Rain %</th><th>Call</th><th>Storm</th><th>PSI / PM2.5</th></tr></thead>
         <tbody id="log-body"></tbody>
       </table>
       <div class="log-empty" id="log-empty">No checks logged yet this session.</div>
@@ -377,7 +392,7 @@
     <div class="log-actions"><button class="btn" id="clear-log-btn">Clear log</button></div>
   </section>
   <footer>
-    Data: NEA Singapore via data.gov.sg (2-Hour Nowcast, 24-Hour Forecast, Rainfall stations, UV Index, PSI) and
+    Data: NEA Singapore via data.gov.sg (2-Hour Nowcast, 24-Hour Forecast, Rainfall stations, UV Index, PSI, 1-hour PM2.5) and
     <a href="https://www.nea.gov.sg/weather/rain-areas" target="_blank" rel="noopener">nea.gov.sg/weather/rain-areas</a> radar imagery. Auto-refreshes every 5 minutes while this page stays open. Built for British Club pickleball sessions — not an official weather product, and the air quality advisory is not a substitute for MOH/NEA guidance for at-risk individuals.
   </footer>
 </div>
@@ -393,7 +408,7 @@
     {id:"radar", label:"Checked the live radar for approaching rain"},
     {id:"storm", label:"Checked the thunderstorm warning"},
     {id:"uv", label:"Checked UV index and packed sun protection if high"},
-    {id:"aqi", label:"Checked the air quality advisory (PSI)"},
+    {id:"aqi", label:"Checked the air quality advisory (PSI + PM2.5)"},
     {id:"cover", label:"Packed a rain cover / towel just in case"}
   ];
   var URLS = {
@@ -401,9 +416,10 @@
     day24: "https://api-open.data.gov.sg/v2/real-time/api/twenty-four-hr-forecast",
     rain: "https://api-open.data.gov.sg/v2/real-time/api/rainfall",
     uv: "https://api.data.gov.sg/v1/environment/uv-index",
-    psi: "https://api-open.data.gov.sg/v2/real-time/api/psi"
+    psi: "https://api-open.data.gov.sg/v2/real-time/api/psi",
+    pm25: "https://api-open.data.gov.sg/v2/real-time/api/pm25"
   };
-  var SOURCE_COUNT = 5;
+  var SOURCE_COUNT = 6;
   function $(id){ return document.getElementById(id); }
   function haversineKm(lat1, lon1, lat2, lon2){
     var R = 6371;
@@ -442,24 +458,65 @@
   function psiInfo(psi){
     if (psi === null || psi === undefined || isNaN(psi)) return null;
     if (psi <= 50){
-      return {cat:"Good", cls:"clear", headline:"Good — fine to play",
-        detail:"Air quality is good. Normal activity, no restrictions on outdoor exertion."};
+      return {cat:"Good", cls:"clear", level:0,
+        guidance:"Normal activities."};
     }
     if (psi <= 100){
-      return {cat:"Moderate", cls:"clear", headline:"Moderate — fine to play",
-        detail:"Air quality is moderate. Normal activity, no restrictions on outdoor exertion."};
+      return {cat:"Moderate", cls:"clear", level:0,
+        guidance:"Normal activities."};
     }
     if (psi <= 200){
-      return {cat:"Unhealthy", cls:"warn", headline:"Unhealthy — play shorter, take breaks",
-        detail:"Reduce prolonged or strenuous outdoor exertion — shorten the session or add more breaks. Anyone elderly, pregnant, a young child, or with a chronic heart/lung condition should minimise (and if that condition is significant, avoid) outdoor exertion."};
+      return {cat:"Unhealthy", cls:"warn", level:1,
+        guidance:"Reduce prolonged or strenuous outdoor physical exertion."};
     }
     if (psi <= 300){
-      return {cat:"Very Unhealthy", cls:"bad", headline:"Very unhealthy — don't play outside",
-        detail:"Avoid prolonged or strenuous outdoor exertion — better to reschedule or move the game indoors. At-risk groups (elderly, pregnant, chronic heart/lung conditions) should minimise outdoor activity of any kind."};
+      return {cat:"Very Unhealthy", cls:"bad", level:2,
+        guidance:"Avoid prolonged or strenuous outdoor physical exertion."};
     }
-    return {cat:"Hazardous", cls:"bad", headline:"Hazardous — stay indoors",
-      detail:"Minimise all outdoor activity — this is not a day to play outside. At-risk groups should avoid outdoor activity entirely."};
+    return {cat:"Hazardous", cls:"bad", level:3,
+      guidance:"Minimise outdoor activity."};
   }
+
+  function pm25Info(pm25){
+    if (pm25 === null || pm25 === undefined || isNaN(pm25)) return null;
+    if (pm25 <= 55){
+      return {cat:"Normal", cls:"clear", level:0,
+        guidance:"Continue with normal activities."};
+    }
+    if (pm25 <= 150){
+      return {cat:"Elevated", cls:"warn", level:1,
+        guidance:"Reduce strenuous outdoor activity for the next hour."};
+    }
+    if (pm25 <= 250){
+      return {cat:"High", cls:"bad", level:2,
+        guidance:"Avoid strenuous outdoor activity for the next hour."};
+    }
+    return {cat:"Very High", cls:"bad", level:3,
+      guidance:"Minimise all outdoor activity for the next hour."};
+  }
+
+  function combinedAqiInfo(psi, pm25){
+    var p = psiInfo(psi);
+    var m = pm25Info(pm25);
+    if (!p && !m) return null;
+
+    var level = Math.max(p ? p.level : 0, m ? m.level : 0);
+    var cls = level === 0 ? "clear" : (level === 1 ? "warn" : "bad");
+    var headline = level === 0
+      ? "Air quality OK — fine to play"
+      : level === 1
+        ? "Air quality caution — ease off strenuous play"
+        : level === 2
+          ? "Air quality poor — avoid strenuous outdoor play"
+          : "Air quality very poor — don't play outside";
+
+    var parts = [];
+    if (p) parts.push("24-hr PSI " + psi + " (" + p.cat + "): " + p.guidance);
+    if (m) parts.push("1-hr PM2.5 " + pm25 + " µg/m³ (" + m.cat + "): " + m.guidance);
+
+    return {level:level, cls:cls, headline:headline, detail:parts.join(" ")};
+  }
+
   function fmtTime(d){
     return d.toLocaleTimeString("en-SG", {hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"Asia/Singapore"}) + " SGT";
   }
@@ -533,7 +590,7 @@
     empty.style.display = "none";
     entries.forEach(function(e){
       var tr = document.createElement("tr");
-      tr.innerHTML = "<td>" + e.time + "</td><td>" + e.pct + "%</td><td>" + e.call + "</td><td>" + e.storm + "</td><td>" + (e.psi || "—") + "</td>";
+      tr.innerHTML = "<td>" + e.time + "</td><td>" + e.pct + "%</td><td>" + e.call + "</td><td>" + e.storm + "</td><td>" + (e.air || e.psi || "—") + "</td>";
       body.appendChild(tr);
     });
   }
@@ -596,14 +653,15 @@
     $("status-text").textContent = "Refreshing…";
     $("status-dot").className = "dot";
     nextRefreshAt = Date.now() + REFRESH_MS;
-    var results = { twoHr:null, day24:null, rain:null, uv:null, psi:null };
+    var results = { twoHr:null, day24:null, rain:null, uv:null, psi:null, pm25:null };
     var okCount = 0;
     var p1 = fetchJson(URLS.twoHr).then(function(j){ results.twoHr = j; okCount++; }).catch(function(){});
     var p2 = fetchJson(URLS.day24).then(function(j){ results.day24 = j; okCount++; }).catch(function(){});
     var p3 = fetchJson(URLS.rain).then(function(j){ results.rain = j; okCount++; }).catch(function(){});
     var p4 = fetchJson(URLS.uv).then(function(j){ results.uv = j; okCount++; }).catch(function(){});
     var p5 = fetchJson(URLS.psi).then(function(j){ results.psi = j; okCount++; }).catch(function(){});
-    Promise.all([p1,p2,p3,p4,p5]).then(function(){
+    var p6 = fetchJson(URLS.pm25).then(function(j){ results.pm25 = j; okCount++; }).catch(function(){});
+    Promise.all([p1,p2,p3,p4,p5,p6]).then(function(){
       compute(results, okCount);
       $("status-dot").className = "dot";
       $("status-text").textContent = okCount === SOURCE_COUNT ? "Live — all sources OK" : (okCount === 0 ? "All sources unreachable" : "Live — partial data (" + okCount + "/" + SOURCE_COUNT + " sources)");
@@ -741,6 +799,31 @@
       pill.style.display = "none";
       setSourceRow(sourceTbody, "PSI (Air Quality)", "24-hr Pollutant Standards Index, " + REGION + " region", "informational", false, "—");
     }
+
+    // ---- 1-hour PM2.5 / immediate air quality ----
+    var pm25Value = null, pm25Ts = null, pm25 = null;
+    if (results.pm25 && results.pm25.data && results.pm25.data.items && results.pm25.data.items[0]){
+      var mItem = results.pm25.data.items[0];
+      var pm25Readings = (mItem.readings && mItem.readings.pm25_one_hourly) || {};
+      pm25Value = pm25Readings[REGION];
+      pm25Ts = mItem.timestamp;
+      if (typeof pm25Value === "number"){
+        pm25 = pm25Info(pm25Value);
+        $("pm25-value").textContent = pm25Value + " µg/m³";
+        $("pm25-cat").textContent = pm25.cat + " — 1-hour PM2.5 (" + REGION + " region)";
+      } else {
+        $("pm25-value").textContent = "—";
+        $("pm25-cat").textContent = "No reading for " + REGION + " region";
+      }
+      $("pm25-time").textContent = pm25Ts ? "As of " + fmtTime(new Date(pm25Ts)) : "";
+      setSourceRow(sourceTbody, "PM2.5 (Air Quality)", "1-hr PM2.5, " + REGION + " region", "informational", true, pm25Ts ? fmtTime(new Date(pm25Ts)) : "—");
+    } else {
+      $("pm25-value").textContent = "—";
+      $("pm25-cat").textContent = "Data unavailable";
+      $("pm25-time").textContent = "";
+      setSourceRow(sourceTbody, "PM2.5 (Air Quality)", "1-hr PM2.5, " + REGION + " region", "informational", false, "—");
+    }
+
     // ---- combine into hourly probabilities ----
     var h1 = Math.round(nowcastScore*0.7 + periodScores[0]*0.3 + (rainingNow ? 15 : 0));
     var h2 = Math.round(nowcastScore*0.5 + periodScores[1]*0.5 + (rainingNow ? 8 : 0));
@@ -779,17 +862,18 @@
         : "No areas are currently forecast as thundery anywhere in Singapore.";
       $("storm-meta").textContent = "Source: NEA 2-Hour Nowcast forecast areas — updated " + (nowcastTs ? fmtTime(new Date(nowcastTs)) : "—") + ".";
     }
-    // ---- air quality advisory banner ----
+    // ---- combined air quality advisory banner (PSI + 1-hour PM2.5) ----
     var aqiBox = $("aqi-box");
-    if (aqi){
-      aqiBox.className = "storm " + (aqi.cls === "clear" ? "clear" : (aqi.cls === "warn" ? "warn" : ""));
-      $("aqi-headline").textContent = aqi.headline + " (PSI " + psiValue + ", " + aqi.cat + ")";
-      $("aqi-detail").textContent = aqi.detail;
-      $("aqi-meta").textContent = "Source: NEA PSI, " + REGION + " region, 24-hr reading — as of " + (psiTs ? fmtTime(new Date(psiTs)) : "—") + ". Based on NEA/MOH's general-population exertion guidance; individual risk varies.";
+    var combinedAqi = combinedAqiInfo(psiValue, pm25Value);
+    if (combinedAqi){
+      aqiBox.className = "storm " + (combinedAqi.cls === "clear" ? "clear" : (combinedAqi.cls === "warn" ? "warn" : ""));
+      $("aqi-headline").textContent = combinedAqi.headline;
+      $("aqi-detail").textContent = combinedAqi.detail;
+      $("aqi-meta").textContent = "Sources: NEA 24-hr PSI + 1-hr PM2.5, " + REGION + " region. PM2.5 is the immediate-activity guide; PSI gives the longer-duration air-quality context. The banner follows the more cautious of the two readings for a pickleball session starting now.";
     } else {
       aqiBox.className = "storm clear";
-      $("aqi-headline").textContent = "PSI unavailable";
-      $("aqi-detail").textContent = "Couldn't reach NEA's PSI feed just now — check nea.gov.sg/psi before heading out if you're unsure about air quality.";
+      $("aqi-headline").textContent = "Air quality data unavailable";
+      $("aqi-detail").textContent = "Couldn't reach NEA's PSI or PM2.5 feeds just now — check haze.gov.sg before heading out if you're unsure about air quality.";
       $("aqi-meta").textContent = "";
     }
     // ---- overall confidence ----
@@ -804,7 +888,11 @@
       pct: headline,
       call: call,
       storm: nearestStormKm <= STORM_RADIUS_KM ? nearestStormKm.toFixed(1) + "km" : "none <" + STORM_RADIUS_KM + "km",
-      psi: aqi ? (psiValue + " (" + aqi.cat + ")") : "—"
+      air: (aqi || pm25)
+        ? ((aqi ? ("PSI " + psiValue + " (" + aqi.cat + ")") : "PSI —") +
+           " / " +
+           (pm25 ? ("PM2.5 " + pm25Value + " (" + pm25.cat + ")") : "PM2.5 —"))
+        : "—"
     });
   }
   // ---------- init ----------
